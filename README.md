@@ -1,5 +1,7 @@
 # Basic x86 ASM Web Server
 
+![image](https://github.com/user-attachments/assets/f67dd579-6298-4be1-869d-f3ad79694d84)
+
 ## Overview
 
 This is a simple web server written in x86 Assembly only using Linux system calls. It adheres to the [x86 Calling Conventions](https://en.wikipedia.org/wiki/X86_calling_conventions#List_of_x86_calling_conventions) and is designed to be compliant with the HTTP/1.0 standard as defined in [RFC 1945](https://tools.ietf.org/html/rfc1945). I started this project to learn about the TCP/IP control structure and how it interacts with the HTTP protocol.
@@ -28,6 +30,57 @@ This project served as an excellent learning experience, offering a hands-on und
 - An x86_64 Linux environment.
 - An assembler and linker (e.g., `as`, `ld`).
 - Basic understanding of assembly language and Linux system calls.
+
+## How I Tested the Server
+Since this web server is solely for the niche task of accepting a file name through a GET request (or creating one with a POST request), I created [a Python script](https://github.com/anishgoyal1108/Basic-x86-ASM-Web-Server/blob/main/server-validator.py) (also below) to create a random file with random contents and see if it could still print out the contents.
+
+```py
+import requests
+import tempfile
+import random
+import string
+
+
+def random_data():
+    """Generate random data for testing."""
+    return "".join(
+        random.choices(string.ascii_letters + string.digits, k=random.randint(32, 256))
+    ).encode()
+
+
+def validate_get(data=None):
+    if data is None:
+        data = random_data()
+
+    # Create a temporary file
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        # Write the random data to the file
+        temp_file.write(data)
+        temp_file.flush()  # Ensure data is written
+
+        # Get the name of the temporary file
+        temp_file_path = temp_file.name
+
+    # Attempt to send a GET request to the server
+    try:
+        response = requests.get(f"http://localhost{temp_file_path}", timeout=1)
+        # Check if the response content matches the original data
+        if response.content != data:
+            return "GET: File contents not correct"
+        else:
+            return f"GET: Successful!\nFile Name: {temp_file.name}\nResponse: {response.content}"
+    except requests.exceptions.ConnectionError:
+        return "GET: Failed to connect"
+
+
+if __name__ == "__main__":
+    for _ in range(10):
+        print(validate_get())
+```
+
+The output of a successful test run is shown below:
+
+![image](https://github.com/user-attachments/assets/71035b7b-5fcc-4a91-8ccd-86eb9a605d27)
 
 ## Getting Started
 
@@ -85,6 +138,7 @@ echo -e "POST /test HTTP/1.0\r\nHost: localhost\r\nContent-Length: 17\r\n\r\0tes
 ## Limitations
 
 - The server currently supports only basic HTTP features and does not handle multiple concurrent requests efficiently beyond the forking mechanism.
+   - This is compounded by the fact that the Linux kernel does not check for a listening file descriptor from a child process before the parent process calls `accept()`. This doesn't have any negative behavior other than flooding the logs from calling `accept()` over and over again. This can be fixed by waiting for the child process to fully close before calling `accept()` from the parent.
 - It lacks comprehensive error handling and logging, making it unsuitable for production use.
 - The request size is limited by the buffer size defined in the code.
 
