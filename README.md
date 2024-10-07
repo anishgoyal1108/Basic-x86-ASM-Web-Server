@@ -26,7 +26,7 @@ This project served as an excellent learning experience, offering a hands-on und
 ## Requirements
 
 - An x86_64 Linux environment.
-- An assembler and linker (e.g., `as`, `ld`).
+- An assembler and linker (e.g., `nasm`, `ld`).
 - Basic understanding of assembly language and Linux system calls.
 
 ## Getting Started
@@ -34,10 +34,10 @@ This project served as an excellent learning experience, offering a hands-on und
 ### Installation
 
 1. Download `server.as` from this repository
-2. Assemble the code into an object file using `as`:
+2. Assemble the code into an object file using `nasm`:
 
 ```bash
-as server.as -o server.o
+nasm -f elf64 -o server.o server.asm
 ```
 
 3. Link the object file:
